@@ -17,7 +17,7 @@ vagrant ssh mc01 -c 'bash -s' <<'EOF'
   sudo systemctl enable memcached
 
   echo 'Configuring Memcached to listen on all interfaces...'
-  sudo sed -i 's/OPTIONS="-l 127.0.0.1"/OPTIONS="-l 0.0.0.0"/' /etc/sysconfig/memcached
+  sudo sed -i 's/127.0.0.1/0.0.0.0/g' /etc/sysconfig/memcached
 
   echo ' Restarting Memcached to apply new config...'
   sudo systemctl restart memcached
@@ -25,8 +25,12 @@ vagrant ssh mc01 -c 'bash -s' <<'EOF'
   echo ' Configuring firewall to allow Memcached port...'
   sudo systemctl start firewalld
   sudo systemctl enable firewalld
-  sudo firewall-cmd --zone=public --add-port=11211/tcp --permanent
-  sudo firewall-cmd --reload
+
+  sudo firewall-cmd --add-port=11211/tcp
+  sudo firewall-cmd --runtime-to-permanent
+  sudo firewall-cmd --add-port=11111/udp
+  sudo firewall-cmd --runtime-to-permanent
+  sudo memcached -p 11211 -U 11111 -u memcached -d
 
   echo 'Memcached setup and configuration complete.'
 EOF
